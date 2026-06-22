@@ -1103,6 +1103,46 @@ html, body {
 
 /* --- Mobile: 580px --- */
 @media (max-width: 580px) {
+  /* Permitir scroll en móvil */
+  html, body {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #app {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  /* Schedule: el contenido scrollea, el footer queda fijo */
+  .schedule {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .slot-area {
+    flex: none;
+    overflow: visible;
+    padding: 16px 20px 130px; /* espacio para el footer fijo */
+    justify-content: flex-start;
+  }
+
+  .sch-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 16px max(16px, env(safe-area-inset-bottom));
+    background: rgba(1, 10, 1, 0.97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(57, 255, 20, 0.12);
+    z-index: 100;
+  }
+
   /* Day select */
   .day-grid {
     grid-template-columns: 1fr;
@@ -1172,10 +1212,26 @@ html, body {
 
 /* --- Pantalla corta (paisaje móvil) --- */
 @media (max-height: 620px) {
+  html, body { height: auto; overflow-x: hidden; overflow-y: auto; }
+  #app       { height: auto; min-height: 100vh; overflow: visible; }
+
+  .schedule  { height: auto; min-height: 100vh; overflow: visible; }
   .slot-area {
-    padding-top: 4px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    flex: none;
+    overflow: visible;
+    padding: 4px 20px 110px;
+    justify-content: flex-start;
+  }
+  .sch-footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 16px max(10px, env(safe-area-inset-bottom));
+    background: rgba(1, 10, 1, 0.97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(57, 255, 20, 0.1);
+    z-index: 100;
+    gap: 6px;
   }
   .slot-time-display { font-size: 38px; margin-bottom: 0; }
   .slot-prompt       { margin-bottom: 10px; font-size: 8px; }
@@ -1184,7 +1240,6 @@ html, body {
   .pc-stage          { margin-bottom: 4px; }
   .btn-descanso      { padding: 9px 16px; }
   .descanso-label    { font-size: 14px; }
-  .sch-footer        { padding: 8px 16px 10px; gap: 6px; }
   .btn-next          { padding: 12px; font-size: 16px; }
   .current-selection { min-height: 16px; font-size: 9px; }
 }
