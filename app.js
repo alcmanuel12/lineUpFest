@@ -400,6 +400,14 @@ function renderSchedule() {
             </button>
           `).join('')}
         </div>
+
+        <button
+          class="btn-descanso ${picked === 'DESCANSO' ? 'selected' : ''}"
+          onclick="selectArtist('${slot.time}', 'DESCANSO')"
+        >
+          <span class="descanso-label">DESCANSO</span>
+          <span class="descanso-sub">BARRA · BAÑOS · RESPIRAR</span>
+        </button>
       </div>
 
       <div class="sch-footer">
@@ -435,16 +443,20 @@ function buildTransitions(dayData) {
     const next = picked[i + 1];
     const currSel  = state.selections[curr.time];
     const nextSel  = state.selections[next.time];
+    const gap      = timeToMins(next.time) - timeToMins(curr.time);
+    if (currSel === 'DESCANSO' || nextSel === 'DESCANSO') {
+      out.push({ curr: currSel, next: nextSel, gap, sameStage: true, currStage: null, nextStage: null, urgency: 'easy', isBreak: true });
+      continue;
+    }
     const currArt  = curr.artistas.find(a => a.nombre === currSel);
     const nextArt  = next.artistas.find(a => a.nombre === nextSel);
-    const gap      = timeToMins(next.time) - timeToMins(curr.time);
     const sameStage = currArt?.escenario === nextArt?.escenario;
     let urgency;
     if (sameStage)       urgency = 'easy';
     else if (gap >= 55)  urgency = 'ok';
     else if (gap >= 30)  urgency = 'warn';
     else                 urgency = 'tight';
-    out.push({ curr: currSel, next: nextSel, gap, sameStage, currStage: currArt?.escenario, nextStage: nextArt?.escenario, urgency });
+    out.push({ curr: currSel, next: nextSel, gap, sameStage, currStage: currArt?.escenario, nextStage: nextArt?.escenario, urgency, isBreak: false });
   }
   return out;
 }
@@ -469,7 +481,7 @@ function renderResult() {
             const sel      = state.selections[slot.time];
             const artista  = slot.artistas.find(a => a.nombre === sel);
             return `
-              <div class="lineup-row ${sel ? 'picked' : 'empty'}">
+              <div class="lineup-row ${sel === 'DESCANSO' ? 'descanso' : sel ? 'picked' : 'empty'}">
                 <span class="lr-time">${slot.time}</span>
                 <div class="lr-info">
                   <span class="lr-name">${sel || '—'}</span>
@@ -488,12 +500,15 @@ function renderResult() {
             <div class="transitions-section">
               <div class="trans-header">COORDINACIÓN DE RUTA</div>
               ${transitions.map(t => `
-                <div class="trans-row">
+                <div class="trans-row${t.isBreak ? ' trans-row-break' : ''}">
                   <div class="trans-acts">${t.curr} → ${t.next}</div>
                   <div class="trans-meta">
-                    <span class="trans-badge ${t.urgency}">${URGENCY_LABEL[t.urgency]}</span>
-                    <span class="trans-gap ${t.urgency}">${t.gap} MIN</span>
-                    <span class="trans-stages">${t.sameStage ? t.currStage : `${t.currStage} → ${t.nextStage}`}</span>
+                    ${t.isBreak
+                      ? `<span class="trans-badge easy">DESCANSO</span><span class="trans-gap easy">${t.gap} MIN LIBRES</span>`
+                      : `<span class="trans-badge ${t.urgency}">${URGENCY_LABEL[t.urgency]}</span>
+                         <span class="trans-gap ${t.urgency}">${t.gap} MIN</span>
+                         <span class="trans-stages">${t.sameStage ? t.currStage : `${t.currStage} → ${t.nextStage}`}</span>`
+                    }
                   </div>
                 </div>
               `).join('')}
@@ -611,8 +626,10 @@ function downloadLineup() {
       : 'rgba(0,0,0,0.08)';
     ctx.fillRect(0, y, W, ROW_H);
 
-    // Fire accent if selected
-    if (sel) {
+    const isBreak = sel === 'DESCANSO';
+
+    // Accent strip
+    if (sel && !isBreak) {
       const rowFire = ctx.createLinearGradient(0, 0, 100, 0);
       rowFire.addColorStop(0, 'rgba(0,220,50,0.25)');
       rowFire.addColorStop(1, 'transparent');
@@ -623,7 +640,7 @@ function downloadLineup() {
     // Time
     ctx.textAlign  = 'left';
     ctx.shadowBlur  = 0;
-    ctx.fillStyle   = sel ? '#39ff14' : '#1a3020';
+    ctx.fillStyle   = isBreak ? '#1e3a1e' : sel ? '#39ff14' : '#1a3020';
     ctx.font        = 'bold 30px Impact, sans-serif';
     ctx.fillText(slot.time, 22, y + 52);
 
@@ -636,11 +653,11 @@ function downloadLineup() {
     ctx.stroke();
 
     // Artist name
-    ctx.fillStyle   = sel ? '#ffffff' : '#0e2010';
-    ctx.shadowBlur  = sel ? 6 : 0;
+    ctx.fillStyle   = isBreak ? '#2a5a2a' : sel ? '#ffffff' : '#0e2010';
+    ctx.shadowBlur  = (!isBreak && sel) ? 6 : 0;
     ctx.shadowColor = '#00dd00';
-    ctx.font        = `bold ${sel ? 46 : 36}px Impact, sans-serif`;
-    ctx.fillText(sel || '—', 130, y + 55);
+    ctx.font        = `bold ${isBreak ? 32 : sel ? 46 : 36}px Impact, sans-serif`;
+    ctx.fillText(isBreak ? '— DESCANSO —' : (sel || '—'), 130, y + 55);
     ctx.shadowBlur  = 0;
 
     // Stage label
@@ -650,8 +667,8 @@ function downloadLineup() {
       ctx.fillText(artista.escenario.toUpperCase(), 130, y + 76);
     }
 
-    // Fire dot
-    if (sel) {
+    // Dot indicator
+    if (sel && !isBreak) {
       ctx.beginPath();
       ctx.arc(W - 28, y + ROW_H/2, 6, 0, Math.PI * 2);
       ctx.fillStyle   = '#00dd00';
